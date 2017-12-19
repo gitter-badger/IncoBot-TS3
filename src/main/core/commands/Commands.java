@@ -33,7 +33,7 @@ public class Commands {
             new KickCommand(input);
             return;
          case "ping":
-            new PingCommand();
+            new PingCommand().handle();
             return;
          case "forcequit":
             return;
@@ -60,7 +60,7 @@ public class Commands {
             new KickCommand(event);
             return;
          case "ping":
-            new PingCommand(event);
+            new PingCommand(event).handle();
             return;
          default:
             throw (new CommandNotFoundException(command[0]));
