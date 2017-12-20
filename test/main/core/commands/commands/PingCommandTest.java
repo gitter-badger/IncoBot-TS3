@@ -74,4 +74,18 @@ public class PingCommandTest {
       verify(mockHandler, times(1)).sendToConsoleWith("COMMAND RESPONSE");
       verify(mockHandler, times(1)).returnToSender(event);
    }
+
+   @Test
+   public void testConsoleEvent() {
+      //GIVEN - A command
+      command = new PingCommand();
+      commandSpy = spy(command);
+      when(commandSpy.getMessageHandler(anyString())).thenReturn(mockHandler);
+
+      //WHEN - PingCommand is handled
+      commandSpy.handle();
+
+      //THEN - Expect it to output only to console.
+      verify(mockHandler, times(1)).sendToConsoleWith("COMMAND RESPONSE");
+   }
 }

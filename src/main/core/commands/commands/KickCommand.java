@@ -2,6 +2,7 @@ package main.core.commands.commands;
 
 import com.github.theholywaffle.teamspeak3.TS3ApiAsync;
 import com.github.theholywaffle.teamspeak3.api.event.TextMessageEvent;
+import com.google.common.annotations.VisibleForTesting;
 import java.util.logging.Level;
 import main.core.Executor;
 import main.server.ServerConnectionManager;
@@ -20,15 +21,8 @@ public class KickCommand {
 
    /**
     * Create a KickCommand instance to handle console execution.
-    *
-    * @param input the string read in from the console that triggered this command.
     */
-   public KickCommand(String input) {
-      try {
-         handle(input);
-      } catch (ArgumentMissingException | IllegalTargetException | InvalidUserIdException e) {
-         new MessageHandler(e.getMessage()).sendToConsoleWith("COMMAND RESPONSE");
-      }
+   public KickCommand() {
    }
 
    /**
@@ -38,55 +32,48 @@ public class KickCommand {
     */
    public KickCommand(TextMessageEvent event) {
       this.event = event;
-
-      try {
-         handle(event.getMessage());
-      } catch (ArgumentMissingException | IllegalTargetException | InvalidUserIdException e) {
-         new MessageHandler(e.getMessage()).sendToUser(event.getInvokerId());
-      }
    }
 
-   private void handle(String input) throws ArgumentMissingException, IllegalTargetException,
+   public void handle(String input) throws ArgumentMissingException, IllegalTargetException,
        InvalidUserIdException {
-      ServerConnectionManager instance = Executor.getServer("testInstance");
-      TS3ApiAsync api = instance.getApiAsync();
+      TS3ApiAsync api = getApi("testInstance");
       String[] params = input.split("\\s", 3);
       int target = Integer.parseInt(params[1]);
       String reason;
       String targetName;
 
-      if (target == instance.getBotId()) {
+      if (!validTarget(target)) {
          throw new IllegalTargetException();
       }
 
-      //Set reason, throwing ArgumentMissingException if not present.
+      //Set reason, throw ArgumentMissingException if not present.
       try {
          reason = params[2];
       } catch (IndexOutOfBoundsException e) {
          throw new ArgumentMissingException("kick", "reason");
       }
 
-      //Determine target by ID, throwing InvalidUserIdException if no connected client has that ID.
+      //Determine targetName by ID, throw InvalidUserIdException if no connected client has that ID.
       try {
-         targetName = api.getClientInfo(target).getUninterruptibly().getNickname();
+         targetName = getTargetName(target);
       } catch (Exception e) {
          if (e.getCause().getMessage().contains("invalid clientID")) {
             throw new InvalidUserIdException(String.valueOf(target));
          } else {
-            new MessageHandler(ErrorMessages.UNKNOWN_ERROR)
+            getMessageHandler(ErrorMessages.UNKNOWN_ERROR)
                 .sendToConsoleWith(Level.WARNING)
-                .sendToUser(event.getInvokerId());
+                .returnToSender(event);
          }
          return;
       }
 
       //Log to console.
       if (event != null) {
-         new MessageHandler(String.format("%s attempted to kick %s from the server for: %s", event
+         getMessageHandler(String.format("%s attempted to kick %s from the server for: %s", event
              .getInvokerName(), targetName, reason))
              .sendToConsoleWith("KICK");
       } else {
-         new MessageHandler(String.format("Attempting to kick %s from the server for: %s",
+         getMessageHandler(String.format("Attempting to kick %s from the server for: %s",
              targetName, reason))
              .sendToConsoleWith("KICK");
       }
@@ -94,5 +81,26 @@ public class KickCommand {
       //Execute kick.
       api.kickClientFromServer(reason, target).onFailure(e ->
           api.kickClientFromServer(reason, target));
+   }
+
+   @VisibleForTesting
+   MessageHandler getMessageHandler(String message) {
+      return new MessageHandler(message);
+   }
+
+   @VisibleForTesting
+   TS3ApiAsync getApi(String instanceName) {
+      return Executor.getServer(instanceName).getApiAsync();
+   }
+
+   @VisibleForTesting
+   Boolean validTarget(int targetId) {
+      //Valid if target is not bot.
+      return targetId != Executor.getServer("testInstance").getBotId();
+   }
+
+   @VisibleForTesting
+   String getTargetName(int targetId) {
+      return getApi("testInstance").getClientInfo(targetId).getUninterruptibly().getNickname();
    }
 }
