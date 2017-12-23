@@ -11,12 +11,10 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.spy;
 
 import com.github.theholywaffle.teamspeak3.TS3ApiAsync;
+import com.github.theholywaffle.teamspeak3.api.CommandFuture;
 import com.github.theholywaffle.teamspeak3.api.TextMessageTargetMode;
 import com.github.theholywaffle.teamspeak3.api.event.TextMessageEvent;
 import main.util.MessageHandler;
-import main.util.exception.ArgumentMissingException;
-import main.util.exception.IllegalTargetException;
-import main.util.exception.InvalidUserIdException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -93,5 +91,25 @@ public class KickCommandTest {
 
       verify(handler, times(1)).sendToConsoleWith("KICK");
       verify(mockApi, times(1)).kickClientFromServer(anyString(), anyInt());
+   }
+
+   @Test
+   public void testConsoleEvent() {
+      command = new KickCommand();
+      commandSpy = spy(command);
+      doReturn(mockApi).when(commandSpy).getApi(anyString());
+      doReturn(true).when(commandSpy).validTarget(anyInt());
+      doReturn("testNickname").when(commandSpy).getTargetName(anyInt());
+      CommandFuture<Boolean> response = mock(CommandFuture.class);
+      doReturn(true).when(response).isSuccessful();
+      doReturn(response).when(mockApi).kickClientFromServer(anyString(), anyInt());
+
+      try {
+         commandSpy.handle("!kick 999 test");
+      } catch (Exception e) {
+         e.printStackTrace();
+      }
+
+      verify(commandSpy, times(1)).getMessageHandler(anyString());
    }
 }

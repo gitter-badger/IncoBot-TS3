@@ -1,7 +1,11 @@
 package main.core.commands.commands;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import com.github.theholywaffle.teamspeak3.TS3ApiAsync;
+import com.github.theholywaffle.teamspeak3.api.CommandFuture.FailureListener;
 import com.github.theholywaffle.teamspeak3.api.event.TextMessageEvent;
+import com.github.theholywaffle.teamspeak3.api.exception.TS3Exception;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.logging.Level;
 import main.core.Executor;
@@ -37,6 +41,7 @@ public class KickCommand {
    public void handle(String input) throws ArgumentMissingException, IllegalTargetException,
        InvalidUserIdException {
       TS3ApiAsync api = getApi("testInstance");
+      checkArgument(api != null);
       String[] params = input.split("\\s", 3);
       int target = Integer.parseInt(params[1]);
       String reason;
@@ -79,8 +84,12 @@ public class KickCommand {
       }
 
       //Execute kick.
-      api.kickClientFromServer(reason, target).onFailure(e ->
-          api.kickClientFromServer(reason, target));
+      api.kickClientFromServer(reason, target).onFailure(e -> {
+            getMessageHandler(String.format("%s could not be kicked from the server. Encountered "
+                + "error: %s", targetName, e.getMessage()))
+                .sendToConsoleWith("KICK");
+         }
+      );
    }
 
    @VisibleForTesting
