@@ -3,13 +3,10 @@ package main.core.commands.commands;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.github.theholywaffle.teamspeak3.TS3ApiAsync;
-import com.github.theholywaffle.teamspeak3.api.CommandFuture.FailureListener;
 import com.github.theholywaffle.teamspeak3.api.event.TextMessageEvent;
-import com.github.theholywaffle.teamspeak3.api.exception.TS3Exception;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.logging.Level;
 import main.core.Executor;
-import main.server.ServerConnectionManager;
 import main.util.ErrorMessages;
 import main.util.MessageHandler;
 import main.util.exception.ArgumentMissingException;
@@ -85,10 +82,10 @@ public class KickCommand {
 
       //Execute kick.
       api.kickClientFromServer(reason, target).onFailure(e -> {
-            getMessageHandler(String.format("%s could not be kicked from the server. Encountered "
-                + "error: %s", targetName, e.getMessage()))
-                .sendToConsoleWith("KICK");
-         }
+             getMessageHandler(String.format("%s could not be kicked from the server. Encountered "
+                 + "error: %s", targetName, e.getMessage()))
+                 .sendToConsoleWith("KICK");
+          }
       );
    }
 
